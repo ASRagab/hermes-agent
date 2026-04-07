@@ -1036,21 +1036,57 @@ COMPACT_BANNER = """
 
 def _build_compact_banner() -> str:
     """Build a compact banner that fits the current terminal width."""
+    try:
+        from hermes_cli.skin_engine import get_active_skin
+        _skin = get_active_skin()
+    except Exception:
+        _skin = None
+
+    skin_name = getattr(_skin, "name", "default") if _skin else "default"
+    border_color = _skin.get_color("banner_border", "#FFD700") if _skin else "#FFD700"
+    title_color = _skin.get_color("banner_title", "#FFBF00") if _skin else "#FFBF00"
+    text_color = _skin.get_color("banner_text", "#CD7F32") if _skin else "#CD7F32"
+    dim_color = _skin.get_color("banner_dim", "#B8860B") if _skin else "#B8860B"
+
+    if skin_name == "default":
+        line1 = "⚕ NOUS HERMES - AI Agent Framework"
+        line2_main = "Messenger of the Digital Gods"
+        line2_suffix = "Nous Research"
+        tiny_line = "⚕ NOUS HERMES"
+    else:
+        agent_name = _skin.get_branding("agent_name", "Hermes Agent") if _skin else "Hermes Agent"
+        welcome = _skin.get_branding("welcome", f"Welcome to {agent_name}!") if _skin else f"Welcome to {agent_name}!"
+        welcome = welcome.replace(" Type your message or /help for commands.", "")
+        line1 = f"{agent_name} - AI Agent Framework"
+        line2_main = welcome
+        line2_suffix = "Nous Research"
+        tiny_line = agent_name
+
     w = min(shutil.get_terminal_size().columns - 2, 64)
     if w < 30:
-        return "\n[#FFBF00]⚕ NOUS HERMES[/] [dim #B8860B]- Nous Research[/]\n"
+        return f"\n[{title_color}]{tiny_line}[/] [dim {dim_color}]- Nous Research[/]\n"
+
     inner = w - 2  # inside the box border
     bar = "═" * w
-    line1 = "⚕ NOUS HERMES - AI Agent Framework"
-    line2 = "Messenger of the Digital Gods  ·  Nous Research"
+    content_width = inner - 2
+
     # Truncate and pad to fit
-    line1 = line1[:inner - 2].ljust(inner - 2)
-    line2 = line2[:inner - 2].ljust(inner - 2)
+    line1 = line1[:content_width].ljust(content_width)
+
+    line2_sep = "  ·  "
+    line2_main_max = max(content_width - len(line2_sep) - len(line2_suffix), 0)
+    if len(line2_main) > line2_main_max:
+        if line2_main_max > 3:
+            line2_main = line2_main[:line2_main_max - 3] + "..."
+        else:
+            line2_main = line2_main[:line2_main_max]
+    line2_prefix = f"{line2_main}{line2_sep}".ljust(max(content_width - len(line2_suffix), 0))
+
     return (
-        f"\n[bold #FFD700]╔{bar}╗[/]\n"
-        f"[bold #FFD700]║[/] [#FFBF00]{line1}[/] [bold #FFD700]║[/]\n"
-        f"[bold #FFD700]║[/] [dim #B8860B]{line2}[/] [bold #FFD700]║[/]\n"
-        f"[bold #FFD700]╚{bar}╝[/]\n"
+        f"\n[bold {border_color}]╔{bar}╗[/]\n"
+        f"[bold {border_color}]║[/] [{title_color}]{line1}[/] [bold {border_color}]║[/]\n"
+        f"[bold {border_color}]║[/] [{text_color}]{line2_prefix}[/][dim {dim_color}]{line2_suffix}[/] [bold {border_color}]║[/]\n"
+        f"[bold {border_color}]╚{bar}╝[/]\n"
     )
 
 
